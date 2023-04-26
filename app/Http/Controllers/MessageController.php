@@ -6,6 +6,7 @@ use App\Models\Board;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use App\Events\MessageSent;
+use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -37,6 +38,7 @@ class MessageController extends Controller
             'body' => 'required',
             'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048' // 画像のバリデーションルール
         ]);
+
         $message = new Message();
         $message->board_id = $id;
         $message->name = $request->name ?? '名無し君';
@@ -51,12 +53,24 @@ class MessageController extends Controller
 
         $message->save(); // メッセージを保存
         $imageUrl = $message->image ? asset('storage/' . $message->image) : null; // 画像URLを取得
-        event(new MessageSent($message->name, $message->body, $id, $imageUrl)); // 画像URLを渡す
 
-        $board = Board::withCount('messages')->findOrFail($id);
-        $last_page = ceil($board->messages_count / 30);
-        $last_message = $board->messages()->latest()->first(); // 最新のメッセージを取得
-        return redirect()->route('boards.show', ['id' => $board->id, 'page' => $last_page, 'message_id' => $last_message->id]); // 最新のメッセージのページにリダイレクト
+        // メッセージが保存された後、イベントを発火
+        event(new MessageSent($message->name, $message->body, $message->board_id, $imageUrl));
+
+        // Ajaxリクエストの場合はJSONレスポンスを返す
+        if ($request->ajax()) {
+            return response()->json([
+                'name' => $message->name,
+                'body' => $message->body,
+                'imageUrl' => $imageUrl,
+                'user_id' => 1 // 仮のユーザーID、実際のアプリケーションでは適切な値を使用してください。
+            ]);
+        } else {
+            $board = Board::withCount('messages')->findOrFail($id);
+            $last_page = ceil($board->messages_count / 30);
+            $last_message = $board->messages()->latest()->first(); // 最新のメッセージを取得
+            return redirect()->route('boards.show', ['id' => $board->id, 'page' => $last_page, 'message_id' => $last_message->id]); // 最新のメッセージのページにリダイレクト
+        }
     }
 
 

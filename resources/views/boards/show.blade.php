@@ -63,7 +63,7 @@
         </div>
 
         <form action="{{ route('messages.store', ['id' => $board->id]) }}" method="post" enctype="multipart/form-data"
-            class="bg-blue-100 bg-opacity-60 rounded px-8 pt-6 pb-8 my-4">
+            class="bg-blue-100 bg-opacity-60 rounded px-8 pt-6 pb-8 my-4" id="message-form">
             @csrf
             <div class="mb-4">
                 <div class="mb-3 flex">
@@ -120,19 +120,17 @@
 
 
 <script>
-    window.paginationInfo = {
-        total: {{ ($messages->currentPage() - 1) * $messages->perPage() + $messages->count() }}
-    };
-
     window.addEventListener('DOMContentLoaded', function() {
-        const boardId = {{ $board->id }};
+        // boardIdを定義して適切な値を設定
+        const boardId = '{{ $board->id }}';
+        // 他のコード ...
 
+        // Event listener for the MessageSent event
         window.Echo.channel('board-detail-chat-channel.' + boardId)
             .listen('MessageSent', function(e) {
                 console.log('MessageSent event received:', e);
 
-                const newMessageNumber = window.paginationInfo.total + 1;
-                window.paginationInfo.total = newMessageNumber;
+                const newMessageNumber = e.number; // この行を修正しました
 
                 const newMessageElement = document.createElement('div');
                 newMessageElement.className = 'my-4 rounded bg-gray-100 p-4';
@@ -149,6 +147,57 @@
 
                 const newMessages = document.querySelector('.new-messages');
                 newMessages.appendChild(newMessageElement);
+
+                // Add this condition to check if the logged-in user is the sender
+                if (window.authUserId === e.user_id) {
+                    scrollToLatestMessage();
+                }
             });
+        // window.paginationInfoオブジェクトを定義し、メッセージの総数を設定
+        window.paginationInfo = {
+            total: parseInt('{{ $board->messages_count }}', 10)
+        };
+
+        const messageForm = document.getElementById('message-form');
+        if (messageForm) {
+            messageForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                // フォームデータを送信し、レスポンスを処理
+                try {
+                    const formData = new FormData(messageForm);
+                    const response = await submitFormData(formData);
+
+                    // フォームをリセット
+                    messageForm.reset();
+                } catch (error) {
+                    console.error('Failed to submit form data:', error);
+                }
+            });
+        }
     });
+
+    // Ajaxを使ってデータを送信する関数
+    function submitFormData(formData) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '{{ route('messages.store', ['id' => $board->id]) }}', true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+            xhr.onload = function() {
+                console.log("Response text:", xhr.responseText)
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    resolve(JSON.parse(xhr.responseText));
+                } else {
+                    reject(new Error('Failed to submit form data'));
+                }
+            };
+
+            xhr.onerror = function() {
+                reject(new Error('Failed to submit form data'));
+            };
+
+            xhr.send(formData);
+        });
+    }
 </script>

@@ -55,7 +55,10 @@ class MessageController extends Controller
         $imageUrl = $message->image ? asset('storage/' . $message->image) : null; // 画像URLを取得
 
         // メッセージが保存された後、イベントを発火
-        event(new MessageSent($message->name, $message->body, $message->board_id, $imageUrl));
+        $number = Message::where('board_id', $id)->count(); // これを追加
+        event(new MessageSent($message->name, $message->body, $message->board_id, $imageUrl, $number)); // $numberを追加
+
+
 
         // Ajaxリクエストの場合はJSONレスポンスを返す
         if ($request->ajax()) {

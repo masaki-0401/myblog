@@ -130,7 +130,7 @@
             .listen('MessageSent', function(e) {
                 console.log('MessageSent event received:', e);
 
-                const newMessageNumber = e.number; // この行を修正しました
+                const newMessageNumber = e.number;
 
                 const newMessageElement = document.createElement('div');
                 newMessageElement.className = 'my-4 rounded bg-gray-100 p-4';
@@ -153,10 +153,6 @@
                     scrollToLatestMessage();
                 }
             });
-        // window.paginationInfoオブジェクトを定義し、メッセージの総数を設定
-        window.paginationInfo = {
-            total: parseInt('{{ $board->messages_count }}', 10)
-        };
 
         const messageForm = document.getElementById('message-form');
         if (messageForm) {
@@ -199,5 +195,10 @@
 
             xhr.send(formData);
         });
+    }
+    // 追加: 最新のメッセージにスクロールする関数
+    function scrollToLatestMessage() {
+        const newMessages = document.querySelector('.new-messages');
+        newMessages.scrollTop = newMessages.scrollHeight;
     }
 </script>

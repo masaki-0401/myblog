@@ -17,13 +17,15 @@ class MessageSent implements ShouldBroadcast
     public $body;
     public $boardId;
     public $imageUrl; // 画像URLを追加
+    public $number; // 追加
 
-    public function __construct($name, $body, $boardId, $imageUrl) // 画像URLを追加
+    public function __construct($name, $body, $boardId, $imageUrl, $number) // $number 引数を追加
     {
         $this->name = $name;
         $this->body = $body;
         $this->boardId = $boardId;
         $this->imageUrl = $imageUrl; // 画像URLを追加
+        $this->number = $number; // 追加
     }
 
     public function broadcastOn()
